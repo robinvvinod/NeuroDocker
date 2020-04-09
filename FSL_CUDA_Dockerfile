@@ -1,0 +1,34 @@
+FROM nvcr.io/nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
+MAINTAINER Robin Vinod robinvvinod@protonmail.com
+
+RUN apt-get update && apt-get install -y
+	bc \
+	dc \
+	git \
+	libopenblas-dev \
+	nodejs \
+	npm \
+	python \
+	tar \
+	unzip \
+	wget
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN npm install -gq bids-validator
+
+COPY fslinstaller.py /
+RUN /fslinstaller.py -V 6.0.1 -d /usr/local/fsl -q
+
+ENV FSLDIR=/usr/local/fsl
+ENV PATH=$FSLDIR/bin:$PATH
+RUN /bin/bash -c 'source /usr/local/fsl/etc/fslconf/fsl.sh'
+ENV FSLMULTIFILEQUIT=TRUE
+ENV FSLOUTPUTTYPE=NIFTI_GZ
+RUN ln -s /usr/local/fsl/bin/eddy_openmp /usr/local/fsl/bin/eddy
+
+COPY bedpostx_gpu /bedpostx_gpu
+RUN mv /bedpostx_gpu/bin/* $FSLDIR/bin
+RUN mv /bedpostx_gpu/lib/* $FSLDIR/lib
+
+COPY probtrackx2_gpu /
+RUN mv /probtrackx2_gpu $FSLDIR/bin 
